@@ -22,3 +22,13 @@ summary     = "Content-addressed reproducible package manager (Nix model) and th
 # specs     = []
 # provides  = ["public:area/iface@1"]
 # requires  = []
+
+[[component]]
+crate     = "pub-pkg-store"
+kind      = "lib"
+ledger    = "store format"
+readiness = "seed"
+effort    = 3
+specs     = ["fips-180-4"]
+provides  = []
+requires  = []

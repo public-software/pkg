@@ -13,16 +13,43 @@ Planned components: pub-pkg · pubd-cache · store format · transparency-log cl
 
 ## In 30 seconds
 
-_A runnable example goes here the day the first crate lands._
+```rust
+use std::collections::BTreeMap;
+use pub_pkg_store::{Digest, Name, References, StoreDir, StorePath, Version, closure};
+
+let store = StoreDir::new("/pub/store")?;
+let libc = StorePath::derive(&store, &Name::new("libc")?, &Version::new("1.0")?, &Digest::of(libc_bytes), &References::new());
+let hello = StorePath::derive(&store, &Name::new("hello")?, &Version::new("2.1")?, &Digest::of(hello_bytes), &References::from([libc.clone()]));
+println!("{}", store.path_of(&hello));                 // /pub/store/<52 symbols>-hello-2.1
+assert_eq!(store.parse(&store.path_of(&hello))?, hello); // one spelling per object
+
+let objects = BTreeMap::from([(libc.clone(), References::new()), (hello.clone(), References::from([libc.clone()]))]);
+let needed = closure([hello.clone()], |path| objects.get(path).cloned())?; // libc and hello, each once
+```
 
 ## What it does
 
+- `pub-pkg-store`: the store path model at the root of the package manager. A store directory, a
+  SHA-256 digest in the suite's base-32 alphabet (Crockford's symbols in lowercase, decoded strictly so
+  a path has one spelling), the name and version grammars, the derivation of a path from its fingerprint
+  (the store directory, the name, the version, the content digest and the sorted references, so the same
+  content yields the same path anywhere and a path is a Merkle link to its closure), the parsers of a
+  basename and of an absolute path, and the closure of a set of roots over a reference lookup with a
+  missing reference named (ADR-0001). No dependency; forbids `unsafe_code`.
+
 ## What it does not do (yet)
+
+- Serialise a directory tree into the bytes the content digest is taken over, or write, read and verify
+  a store on disk: the store format, its own ADR and crate.
+- Name an object whose content contains its own path, or a build recipe (inputs, builder, outputs): later
+  object kinds with their own fingerprints.
+- Serve or fetch objects (`pubd-cache`), or log what was published (the transparency-log client).
 
 ## Status
 
 | Ledger entry | Readiness | Next |
 |---|---|---|
+| store format (`pub-pkg-store`) | seed: the store path model, the digest and its alphabet, the closure | the serialisation and the on-disk store; the build recipe object |
 
 ## How it fits the suite
 
